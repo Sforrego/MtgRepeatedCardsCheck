@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic the Gathering Deck Comparator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      background-color: #f4f4f4;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 90%;
+      max-width: 1200px;
+      background-color: white;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+
+    .deck-column {
+      display: flex;
+      flex-direction: column;
+      width: 30%;
+      margin-right: 20px;
+    }
+
+    .deck-input {
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #output {
+      width: 40%;
+      margin-left: 20px;
+    }
+
+    #output h2 {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #output p {
+      font-size: 14px;
+      margin: 5px 0;
+    }
+
+    .shared-card {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .shared-card strong {
+      font-weight: bold;
+    }
+
+    .add-deck-btn {
+      margin: 10px 0;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+    <div class="deck-column" id="deck-column">
+        <div class="deck-input">
+        <textarea placeholder="Deck 1 (URL or Card List)" id="deck1"></textarea>
+        </div>
+        <div class="deck-input">
+        <textarea placeholder="Deck 2 (URL or Card List)" id="deck2"></textarea>
+        </div>
+        <button class="add-deck-btn" onclick="addDeck()">+ Add Another Deck</button>
+    </div>
+    
+    <div class="deck-column">
+        <button onclick="compareDecks()">Compare Decks</button>
+        <div id="output"></div>
+    </div>
+</div>
+  
+<script>
+let deckCount = 2;
+
+function addDeck() {
+    deckCount++;
+    const deckColumn = document.getElementById('deck-column');
+    const newDeckInput = document.createElement('div');
+    newDeckInput.classList.add('deck-input');
+    newDeckInput.innerHTML = `<textarea placeholder="Deck ${deckCount} (URL or Card List)" id="deck${deckCount}"></textarea>`;
+    deckColumn.insertBefore(newDeckInput, deckColumn.children[deckColumn.children.length - 1]);
+}
+
+async function compareDecks() {
+    // Get deck inputs and start comparison
+    const decks = [];
+    for (let i = 1; i <= deckCount; i++) {
+      const deck = document.getElementById(`deck${i}`).value;
+      if (deck) {
+        decks.push(deck);
+      }
+    }
+  
+    try {
+    const response = await fetch('http://localhost:5000/compare-decks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decks })
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch deck data.');
+
+    const data = await response.json();
+    const sharedCards = data.sharedCards;
+    
+    // Display total number of shared cards
+    let output = `<h2>Shared Cards (${sharedCards.length} cards repeated):</h2>`;
+
+    // Display each shared card with its details
+    sharedCards.forEach(card => {
+        output += `<p class="shared-card"><strong>${card.card}</strong> is in decks ${card.decks.join(', ')}</p>`;
+    });
+
+    document.getElementById('output').innerHTML = output;
+    } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('output').textContent = 'Error comparing decks. Please check the console for details.';
+    }
+};
+
+</script>  
+</body>
+</html>
